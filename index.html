@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>CodePen - 식물 성장 관찰 일지(저장용)</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>식물 성장 관찰 일지</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #E6F3FF;
+            background-image: url('https://example.com/cute_background.jpg');
+            background-size: cover;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #4A90E2;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-top: 20px;
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex-grow: 1;
+            margin: 0 5px;
+        }
+        button:hover {
+            background-color: #357ABD;
+        }
+        #observationList {
+            margin-top: 20px;
+        }
+        .observation {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        .observation img {
+            width: 100%;
+            height: auto;
+            margin-top: 10px;
+            border: 10px solid #4A90E2;
+            box-sizing: border-box;
+        }
+        #camera {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            margin-top: 10px;
+            border: 10px solid #4A90E2;
+            box-sizing: border-box;
+        }
+        #photoFrame {
+            width: 100%;
+            height: 0;
+            padding-bottom: 75%; /* 4:3 비율 */
+            border: 10px solid #4A90E2;
+            overflow: hidden;
+            position: relative;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+        #photoFrame img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 식물 성장 관찰 일지 🌱</h1>
+        <form id="observationForm">
+            <label for="observerName">이름</label>
+            <input type="text" id="observerName" required>
+            
+            <label for="plantName">관찰 식물</label>
+            <input type="text" id="plantName" required>
+            
+            <label for="date">관찰 날짜</label>
+            <input type="date" id="date" required>
+            
+            <label for="content">관찰 내용</label>
+            <textarea id="content" rows="4" required></textarea>
+            
+            <label>관찰 사진</label>
+            <video id="camera" autoplay playsinline></video>
+            <div id="photoFrame" style="display:none;">
+                <img id="capturedImage" src="" alt="촬영된 사진">
+            </div>
+            
+            <div class="button-row">
+                <button type="button" id="captureButton">사진 찍기</button>
+                <button type="submit">저장하기</button>
+                <button type="button" id="resetButton">초기화</button>
+                <button type="button" id="saveImageButton">그림 파일로 저장</button>
+            </div>
+        </form>
+        
+        <div id="observationList"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        const form = document.getElementById('observationForm');
+        const observationList = document.getElementById('observationList');
+        const resetButton = document.getElementById('resetButton');
+        const saveImageButton = document.getElementById('saveImageButton');
+        const camera = document.getElementById('camera');
+        const captureButton = document.getElementById('captureButton');
+        const photoFrame = document.getElementById('photoFrame');
+        const capturedImage = document.getElementById('capturedImage');
+        let stream;
+
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbw4LDWRhfrrFxkbobmd50HHWV5ikMjquzrOeWiQiEj3hSiKzrv54NqrV2Em-QEGH_pc/exec'; // Google Apps Script 웹앱 배포 URL
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                camera.srcObject = stream;
+            } catch (err) {
+                console.error("카메라 접근 오류:", err);
+                alert("카메라를 시작할 수 없습니다. 카메라 접근 권한을 확인해주세요.");
+            }
+        }
+
+        function capturePhoto() {
+            const canvas = document.createElement('canvas');
+            canvas.width = camera.videoWidth;
+            canvas.height = camera.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(camera, 0, 0, canvas.width, canvas.height);
+            capturedImage.src = canvas.toDataURL('image/jpeg');
+            photoFrame.style.display = 'block';
+            camera.style.display = 'none';
+        }
+
+        captureButton.addEventListener('click', capturePhoto);
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const observerName = document.getElementById('observerName').value;
+            const plantName = document.getElementById('plantName').value;
+            const date = document.getElementById('date').value;
+            const content = document.getElementById('content').value;
+
+            let imageData = '';
+            if (photoFrame.style.display !== 'none') {
+                imageData = capturedImage.src; // Base64 인코딩된 이미지 데이터
+            }
+
+            // 데이터를 Google Apps Script로 POST 요청
+            fetch(scriptURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    observerName: observerName,
+                    plantName: plantName,
+                    date: date,
+                    content: content,
+                    image: imageData // 이미지를 포함하여 전송
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  alert('저장이 완료되었습니다!');
+                  form.reset();
+                  photoFrame.style.display = 'none';
+                  camera.style.display = 'block';
+              })
+              .catch(error => {
+                  console.error('Error!', error.message);
+              });
+        });
+
+        resetButton.addEventListener('click', function() {
+            form.reset();
+            observationList.innerHTML = '';
+            photoFrame.style.display = 'none';
+            camera.style.display = 'block';
+        });
+
+        saveImageButton.addEventListener('click', function() {
+            html2canvas(observationList).then(canvas => {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = '관찰결과.png';
+                link.click();
+            });
+        });
+
+        startCamera();
+    </script>
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
